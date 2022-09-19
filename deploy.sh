@@ -1,0 +1,1 @@
+gcloud functions deploy riDfWebHook --region=europe-west1 --runtime=nodejs16 --entry-point=riDfWebHook --trigger-http --project charli-agilecoach-hbsc-ncmled
