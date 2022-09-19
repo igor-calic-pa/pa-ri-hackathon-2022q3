@@ -90,7 +90,7 @@ const riDfWebHook = async (request, response) => {
 
 
     if (tag in TAG_MAPPING) {
-        text = await TAG_MAPPING[tag].call(this, )
+        text = await TAG_MAPPING[tag].call(this, webHookReq)
     } else {
         text = `There are no fulfillment responses defined for "${tag} tag`;
     }
