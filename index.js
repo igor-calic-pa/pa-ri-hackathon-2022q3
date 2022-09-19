@@ -2,6 +2,8 @@ import functions from '@google-cloud/functions-framework';
 import { EntityTypesClient } from "@google-cloud/dialogflow-cx";
 import logger from 'npmlog'
 
+import {createTicket} from "./persistence.js";
+
 
 const cxEntityTypesClient = new EntityTypesClient({apiEndpoint: 'europe-west1-dialogflow.googleapis.com'});
 
@@ -11,7 +13,7 @@ const locationId = 'europe-west1'
 const agentId = 'c4334d7b-b59f-4373-819a-bae2f4e931db'
 const parent = `projects/${projectId}/locations/${locationId}/agents/${agentId}`
 
-const listEntityTypes = async() => {
+const listEntityTypes = async(displayName) => {
     const entityTypes = [];
     // Construct request
     const request = {
@@ -21,15 +23,25 @@ const listEntityTypes = async() => {
     // Run request
     const iterable = await cxEntityTypesClient.listEntityTypesAsync(request);
     for await (const responsePage of iterable) {
-        for (const entity of responsePage.entities) {
-            entityTypes.push(entity.value)
+        let append = false;
+        if (displayName) {
+            if (responsePage.displayName === displayName) {
+                append = true;
+            }
+        } else {
+            append = true;
+        }
+        if (append) {
+            for (const entity of responsePage.entities) {
+                entityTypes.push(entity.value)
+            }
         }
     }
     return entityTypes;
 }
 
 const showAvailableProducts = async (req) => {
-    const allTypes = await listEntityTypes();
+    const allTypes = await listEntityTypes('product-type');
     return `These are available products: ${allTypes.join(',')}`
 }
 
@@ -54,7 +66,9 @@ const getName = async (webHookReq) => {
 
 const submitTicket = async (webHookReq) => {
     logger.info(`submitTicket ${webHookReq}...`);
-    return 'Submitting a ticket';
+    const sessionParams = webHookReq.sessionInfo.parameters
+    const ticketId = await createTicket(sessionParams['product-type'], sessionParams['description'], sessionParams['current-user'])
+    return `Created ticket with an id '${ticketId}'`;
 }
 
 const TAG_MAPPING = {
@@ -98,3 +112,11 @@ const riDfWebHook = async (request, response) => {
 }
 
 functions.http('riDfWebHook', riDfWebHook);
+
+// const main = async () => {
+//     return await listEntityTypes('product-type');
+// }
+//
+// main()
+//     .then( r => console.log(r))
+//     .catch( e=> console.log(e))
